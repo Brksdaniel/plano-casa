@@ -40,3 +40,17 @@ export function checkPublicEnv(): EnvCheck {
     throw e
   }
 }
+
+export type ServiceEnv = { supabaseSecretKey: string; cronSecret: string }
+
+/**
+ * Segredos que só existem no servidor (nunca use NEXT_PUBLIC_ para eles).
+ * CRON_SECRET precisa ter pelo menos 32 caracteres.
+ */
+export function getServiceEnv(): ServiceEnv {
+  const supabaseSecretKey = process.env.SUPABASE_SECRET_KEY
+  const cronSecret = process.env.CRON_SECRET
+  if (!supabaseSecretKey) throw new MissingEnvError('SUPABASE_SECRET_KEY')
+  if (!cronSecret || cronSecret.length < 32) throw new MissingEnvError('CRON_SECRET')
+  return { supabaseSecretKey, cronSecret }
+}

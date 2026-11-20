@@ -59,3 +59,24 @@ describe('checkPublicEnv', () => {
     expect(checkPublicEnv().ok).toBe(true)
   })
 })
+
+describe('getServiceEnv', () => {
+  it('lança MissingEnvError sem SUPABASE_SECRET_KEY', async () => {
+    const { getServiceEnv } = await import('./env')
+    vi.stubEnv('SUPABASE_SECRET_KEY', '')
+    vi.stubEnv('CRON_SECRET', 'x'.repeat(32))
+    expect(() => getServiceEnv()).toThrowError(MissingEnvError)
+  })
+  it('recusa CRON_SECRET curto demais (menos de 32 caracteres)', async () => {
+    const { getServiceEnv } = await import('./env')
+    vi.stubEnv('SUPABASE_SECRET_KEY', 'sb_secret_x')
+    vi.stubEnv('CRON_SECRET', 'curto')
+    expect(() => getServiceEnv()).toThrowError(MissingEnvError)
+  })
+  it('retorna os valores', async () => {
+    const { getServiceEnv } = await import('./env')
+    vi.stubEnv('SUPABASE_SECRET_KEY', 'sb_secret_x')
+    vi.stubEnv('CRON_SECRET', 'y'.repeat(32))
+    expect(getServiceEnv()).toEqual({ supabaseSecretKey: 'sb_secret_x', cronSecret: 'y'.repeat(32) })
+  })
+})
