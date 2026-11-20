@@ -1,6 +1,9 @@
 import type { Metadata } from 'next'
 import { Geist, Geist_Mono } from 'next/font/google'
 import { ConfigError } from '@/components/config-error'
+import { ThemeProvider } from '@/components/theme-provider'
+import { Toaster } from '@/components/ui/sonner'
+import { TooltipProvider } from '@/components/ui/tooltip'
 import { checkPublicEnv } from '@/lib/env'
 import './globals.css'
 
@@ -17,9 +20,18 @@ export default function RootLayout({ children }: LayoutProps<'/'>) {
   const envCheck = checkPublicEnv()
 
   return (
-    <html lang="pt-BR" className={`${geistSans.variable} ${geistMono.variable} h-full antialiased`}>
+    <html
+      lang="pt-BR"
+      suppressHydrationWarning
+      className={`${geistSans.variable} ${geistMono.variable} h-full antialiased`}
+    >
       <body className="min-h-full bg-background text-foreground">
-        {envCheck.ok ? children : <ConfigError variable={envCheck.variable} />}
+        <ThemeProvider>
+          <TooltipProvider delayDuration={200}>
+            {envCheck.ok ? children : <ConfigError variable={envCheck.variable} />}
+            <Toaster richColors position="top-right" />
+          </TooltipProvider>
+        </ThemeProvider>
       </body>
     </html>
   )
