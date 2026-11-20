@@ -3,7 +3,7 @@
 import type { FieldKey } from '@deniels/core'
 import { AlertTriangle, CheckCircle2, ExternalLink, Link2, Loader2, Search } from 'lucide-react'
 import Link from 'next/link'
-import { useActionState, useMemo, useState } from 'react'
+import { startTransition, useActionState, useEffect, useMemo, useRef, useState } from 'react'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
@@ -24,11 +24,21 @@ function initialValue(key: FormKey, value: string | number | undefined): string 
   return String(value)
 }
 
-export function NewApartmentFlow() {
+export function NewApartmentFlow({ initialUrl = '' }: { initialUrl?: string }) {
   const [read, readAction, reading] = useActionState<ReadResult | null, FormData>(readListingAction, null)
   const [readKey, setReadKey] = useState(0)
   // Controlado: o React limpa campos não controlados depois de uma action; o link precisa continuar visível.
-  const [url, setUrl] = useState('')
+  const [url, setUrl] = useState(initialUrl)
+
+  // Veio da extensão ("Adicionar ao Deniels"): já lê o anúncio.
+  const autoRead = useRef(false)
+  useEffect(() => {
+    if (!initialUrl || autoRead.current) return
+    autoRead.current = true
+    const fd = new FormData()
+    fd.set('url', initialUrl)
+    startTransition(() => readAction(fd))
+  }, [initialUrl, readAction])
 
   return (
     <div className="space-y-6">
