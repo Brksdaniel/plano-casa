@@ -127,6 +127,8 @@ Se o servidor for bloqueado 3 vezes seguidas num imóvel "automático", ele é r
 
 ## 5. Banco de dados (Postgres / Supabase)
 
+**Hospedagem (decidido pelo usuário em 2026-11-20):** projeto Supabase existente `sistema-salas` (ref `uruiexisyqteqnegmyag`, região sa-east-1), num **schema próprio `tracker`**, isolado das tabelas `public.rooms` / `public.reservations`. O schema `tracker` precisa ser adicionado aos "Exposed schemas" da Data API (o usuário faz no painel). Os clientes Supabase do app usam `db: { schema: 'tracker' }`. As migrações do tracker nunca tocam o schema `public`. Consequência aceita: pausar/apagar o sistema-salas derruba o tracker.
+
 Todas as tabelas com `user_id uuid references auth.users` e RLS `user_id = auth.uid()`. Escritas de monitoramento usam a service role apenas no servidor.
 
 - **profiles** — id (=auth.users.id), nome, criado_em.
@@ -224,7 +226,8 @@ Cada etapa termina com testes automatizados + teste guiado pelo usuário antes d
 8. **Polimento e produção** — animações, revisão mobile, deploy na Vercel, configuração do cron em produção, guia de configuração (Supabase, Vercel, Resend, extensão).
 
 ## 13. Decisões pendentes do usuário
-- Projeto Supabase: a organização já tem 2 projetos ativos (limite do plano gratuito). Liberar vaga (pausar um) ou outro caminho.
+- ~~Projeto Supabase~~ → decidido: schema `tracker` no projeto `sistema-salas`.
+- Confirmar se o sistema-salas usará login no futuro (afeta desativar cadastro público).
 - Links reais de anúncios (2–3 por plataforma usada) e cidade.
 - Conta Resend (Etapa 7).
 
