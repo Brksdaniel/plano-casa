@@ -225,6 +225,14 @@ Cada etapa termina com testes automatizados + teste guiado pelo usuário antes d
 7. **Notificações** — central no site, e-mail (Resend), deduplicação, limiares, resumo diário.
 8. **Polimento e produção** — animações, revisão mobile, deploy na Vercel, configuração do cron em produção, guia de configuração (Supabase, Vercel, Resend, extensão).
 
+## 12.1 Achados com links reais (2026-11-20) — valem para a Etapa 2
+
+Cidades de interesse: **Curitiba** e **São José dos Pinhais (PR)**. Plataformas usadas: ZAP (4 de 6 links) e Chaves na Mão (2 de 6). Usuário decidiu **manter a ordem das etapas** (extensão continua na Etapa 4).
+
+- **Chaves na Mão** (servidor acessa, HTTP 200): JSON-LD `@graph` com `RealEstateListing` → `offers` (`Offer.price`, `priceCurrency`, `availability` schema.org/InStock) → `itemOffered` (`numberOfBedrooms`, `numberOfBathroomsTotal`, `floorSize.value`, `address.addressLocality` = "Bairro, Cidade", `addressRegion`, `geo`) e `about.image[]`. ID externo no caminho: `/id-<n>/`. Condomínio/IPTU **não** têm campo estruturado: só aparecem no texto da descrição ("Condomínio R$ 270,00") → lidos por regex com confiabilidade **média**. Vagas também não têm campo estruturado (aparecem no texto/URL "com-garagem").
+- **ZAP** (servidor bloqueado, HTTP 403 desafio): nada é buscado. O próprio link traz dados: `/imovel/aluguel-apartamento-<N>-quartos-…-<cidade>-pr-<M>m2-id-<ID>/` → quartos, área, cidade (por lista de cidades conhecidas), ID externo. Bairro **não** é extraído do link (as palavras de característica variam e tornariam o palpite não confiável). Preço/condomínio/IPTU: digitados pelo usuário até a extensão existir. Campos lidos do link têm origem "link".
+- Origem de cada campo exibida no formulário: **anúncio** (lido da página), **link** (lido da URL), **você** (digitado).
+
 ## 13. Decisões pendentes do usuário
 - ~~Projeto Supabase~~ → decidido: schema `tracker` no projeto `sistema-salas`.
 - Confirmar se o sistema-salas usará login no futuro (afeta desativar cadastro público).
