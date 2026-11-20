@@ -233,6 +233,18 @@ Cidades de interesse: **Curitiba** e **São José dos Pinhais (PR)**. Plataforma
 - **ZAP** (servidor bloqueado, HTTP 403 desafio): nada é buscado. O próprio link traz dados: `/imovel/aluguel-apartamento-<N>-quartos-…-<cidade>-pr-<M>m2-id-<ID>/` → quartos, área, cidade (por lista de cidades conhecidas), ID externo. Bairro **não** é extraído do link (as palavras de característica variam e tornariam o palpite não confiável). Preço/condomínio/IPTU: digitados pelo usuário até a extensão existir. Campos lidos do link têm origem "link".
 - Origem de cada campo exibida no formulário: **anúncio** (lido da página), **link** (lido da URL), **você** (digitado).
 
+## 12.2 Decisões da Etapa 3 (2026-11-20)
+
+- Código no GitHub **público** `Brksdaniel/plano-casa` (escolha explícita do usuário; nenhum segredo versionado) + projeto Vercel importado do repositório (root `apps/web`). Deploy automático a cada push na `main`.
+- Agendamento: `pg_cron` **a cada hora** chama `/api/cron/monitor`; cada execução processa até 8 imóveis em modo `auto` cuja última tentativa tem mais de 6 h (cada imóvel é verificado ~4×/dia sem estourar o tempo de função da Vercel). Vercel Cron 1×/dia como reserva. URL e segredo do cron ficam no **Vault** do Supabase.
+- O cron grava com a chave secreta do Supabase (`SUPABASE_SECRET_KEY`, só no servidor). O usuário copia essa chave para o `.env.local` e para a Vercel; o assistente nunca a manipula.
+- Lógica pura no core (`packages/core`): `detectChanges` e `nextStatus` (regras do §6, contadores de falhas/404). Reutilizável pela extensão.
+- Histórico de preço: nova linha quando aluguel/condomínio/IPTU mudam **ou** se a última linha tem mais de 20 h (gráfico diário sem inflar o banco).
+- Valores lidos da página atualizam o imóvel; valores que o usuário digitou só são substituídos quando a página trouxer o campo com confiança (`jsonld`/`text`/`meta`).
+- Após 3 falhas de acesso seguidas, imóvel `auto` passa para `extension` (e o motivo fica no histórico de status).
+- "Atualizar anúncio agora": modo `auto` → verificação imediata (mín. 10 min entre verificações); `extension` → abre o anúncio + atualização manual; `manual` → atualização manual rápida (aluguel, condomínio, IPTU, disponibilidade) que gera snapshot `manual`, histórico e mudanças.
+- Cards ganham variação de preço (verde ▼ / vermelho ▲, R$ e %) pela view `tracker.apartment_price_trend` (security_invoker).
+
 ## 13. Decisões pendentes do usuário
 - ~~Projeto Supabase~~ → decidido: schema `tracker` no projeto `sistema-salas`.
 - Confirmar se o sistema-salas usará login no futuro (afeta desativar cadastro público).
