@@ -245,6 +245,17 @@ Cidades de interesse: **Curitiba** e **São José dos Pinhais (PR)**. Plataforma
 - "Atualizar anúncio agora": modo `auto` → verificação imediata (mín. 10 min entre verificações); `extension` → abre o anúncio + atualização manual; `manual` → atualização manual rápida (aluguel, condomínio, IPTU, disponibilidade) que gera snapshot `manual`, histórico e mudanças.
 - Cards ganham variação de preço (verde ▼ / vermelho ▲, R$ e %) pela view `tracker.apartment_price_trend` (security_invoker).
 
+## 12.3 Achados e decisões da Etapa 4 — extensão (2026-11-20)
+
+- **ZAP num navegador real** (aberto pelo navegador embutido, sem desafio): JSON-LD `Product` com `sku` (= ID do anúncio), `image[]`, `offers.price` e `offers.availability` (`InStock`); `name` = "Imóvel em <Bairro>, <Cidade> - <UF>". Marcação estável no HTML: `data-testid="condoFee"` ("R$ 350/mês"), `data-testid="iptu"` ("Isento" = 0), `data-testid="location-address"`, e `li[itemprop]` em `amenities-list` (`floorSize`, `numberOfRooms`, `numberOfBathroomsTotal`, `numberOfParkingSpaces`). Fixture real reduzida em `packages/core/test/fixtures/zap-apto.html`. Viva Real é do mesmo grupo e usará o mesmo leitor; será confirmado com um anúncio real quando houver. OLX/Imovelweb: leitor genérico (JSON-LD/Open Graph) até termos um anúncio real.
+- Indisponibilidade no ZAP só por `offers.availability` fora de `InStock`; nenhum texto de "anúncio encerrado" é inventado sem exemplo real.
+- **A extensão só lê a página que o usuário já abriu**; não abre abas, não clica, não toca em desafios (se a página for desafio, não faz nada).
+- Leitura no navegador com o mesmo `packages/core`; o servidor recebe a **extração** (não o HTML), valida com zod e aplica o mesmo `planCheck` com `source = 'extension'` (sem rebaixamento de modo).
+- **Login**: página "Conectar extensão" em Configurações envia a sessão do Supabase para a extensão via `externally_connectable` (só o domínio do site e `localhost:3000`). A extensão guarda a sessão em `chrome.storage.local` e renova o token pela API de Auth com a chave publicável. Nenhuma chave secreta na extensão.
+- **ID fixo da extensão** via campo `key` do manifesto (chave pública gerada uma vez; a privada não é guardada) → `NEXT_PUBLIC_EXTENSION_ID` no site.
+- Instalação: modo desenvolvedor → "Carregar sem compactação" (`apps/extension/dist`). Sem Chrome Web Store.
+- Anúncio não acompanhado: selo discreto "Adicionar ao Deniels" que abre `/apartamentos/novo?url=…` já lendo o link.
+
 ## 13. Decisões pendentes do usuário
 - ~~Projeto Supabase~~ → decidido: schema `tracker` no projeto `sistema-salas`.
 - Confirmar se o sistema-salas usará login no futuro (afeta desativar cadastro público).
