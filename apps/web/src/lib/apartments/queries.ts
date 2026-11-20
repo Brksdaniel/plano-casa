@@ -2,6 +2,7 @@ import 'server-only'
 import type { ParsedListingUrl } from '@deniels/core'
 import type { SupabaseClient } from '@supabase/supabase-js'
 import type { Database } from '@/lib/database.types'
+import { displayName } from './meta'
 
 type Client = SupabaseClient<Database, 'tracker'>
 
@@ -30,7 +31,7 @@ export async function getApartment(supabase: Client, id: string) {
 
 /** Já existe um imóvel com o mesmo link normalizado ou o mesmo código do anúncio? (RLS: só do usuário) */
 export async function findDuplicate(supabase: Client, parsed: ParsedListingUrl): Promise<DuplicateInfo | null> {
-  const pick = 'id, custom_name, source_title'
+  const pick = 'id, custom_name, source_title, platform, bedrooms, city'
   const byUrl = await supabase.from('apartments').select(pick).eq('url_normalized', parsed.normalized).limit(1).maybeSingle()
   let row = byUrl.data
   if (!row && parsed.externalId) {
@@ -43,5 +44,5 @@ export async function findDuplicate(supabase: Client, parsed: ParsedListingUrl):
       .maybeSingle()
     row = byId.data
   }
-  return row ? { id: row.id, name: row.custom_name ?? row.source_title ?? 'Imóvel sem nome' } : null
+  return row ? { id: row.id, name: displayName(row) } : null
 }

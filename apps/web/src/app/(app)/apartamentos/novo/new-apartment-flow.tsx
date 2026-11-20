@@ -27,6 +27,8 @@ function initialValue(key: FormKey, value: string | number | undefined): string 
 export function NewApartmentFlow() {
   const [read, readAction, reading] = useActionState<ReadResult | null, FormData>(readListingAction, null)
   const [readKey, setReadKey] = useState(0)
+  // Controlado: o React limpa campos não controlados depois de uma action; o link precisa continuar visível.
+  const [url, setUrl] = useState('')
 
   return (
     <div className="space-y-6">
@@ -53,6 +55,8 @@ export function NewApartmentFlow() {
               inputMode="url"
               required
               autoFocus
+              value={url}
+              onChange={(e) => setUrl(e.target.value)}
               placeholder="https://www.exemplo.com.br/imovel/..."
               className="h-11 pl-9"
             />

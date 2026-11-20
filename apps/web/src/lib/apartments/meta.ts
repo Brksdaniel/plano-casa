@@ -1,3 +1,4 @@
+import { PLATFORM_LABEL, type Platform } from '@deniels/core'
 import type { ApartmentStatus, ConfidenceLevel, DataSource, MonitorMode } from '@/lib/database.types'
 
 export type Tone = 'green' | 'red' | 'yellow' | 'gray' | 'blue'
@@ -23,8 +24,22 @@ export const SOURCE_LABEL: Record<DataSource, string> = { server: 'servidor', ex
 
 export const CONFIDENCE_LABEL: Record<ConfidenceLevel, string> = { alta: 'Alta', media: 'Média', baixa: 'Baixa' }
 
-export function displayName(a: { custom_name: string | null; source_title: string | null }): string {
-  return a.custom_name ?? a.source_title ?? 'Imóvel sem nome'
+/** Nome exibido: o seu > título do anúncio > montado a partir dos dados reais (nunca inventado). */
+export function displayName(a: {
+  custom_name: string | null
+  source_title: string | null
+  platform?: string | null
+  bedrooms?: number | null
+  city?: string | null
+}): string {
+  if (a.custom_name) return a.custom_name
+  if (a.source_title) return a.source_title
+  const parts = [
+    a.platform ? (PLATFORM_LABEL[a.platform as Platform] ?? null) : null,
+    a.bedrooms != null ? `${a.bedrooms} ${a.bedrooms === 1 ? 'quarto' : 'quartos'}` : null,
+    a.city ?? null,
+  ].filter(Boolean)
+  return parts.length >= 2 ? parts.join(' · ') : 'Imóvel sem nome'
 }
 
 export const TONE_CLASS: Record<Tone, string> = {

@@ -33,4 +33,10 @@ describe('displayName', () => {
     expect(displayName({ custom_name: null, source_title: 'Título' })).toBe('Título')
     expect(displayName({ custom_name: null, source_title: null })).toBe('Imóvel sem nome')
   })
+  it('sem nome nem título: monta a partir dos dados reais', () => {
+    expect(displayName({ custom_name: null, source_title: null, platform: 'zap', bedrooms: 2, city: 'Curitiba' })).toBe(
+      'ZAP Imóveis · 2 quartos · Curitiba',
+    )
+    expect(displayName({ custom_name: null, source_title: null, platform: 'zap', bedrooms: 1, city: null })).toBe('ZAP Imóveis · 1 quarto')
+  })
 })

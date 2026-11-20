@@ -41,7 +41,9 @@ async function Detail({ params }: { params: Promise<{ id: string }> }) {
     <div className="space-y-6">
       <div className="flex flex-col gap-4 sm:flex-row sm:items-start sm:justify-between">
         <div className="min-w-0">
-          <h2 className="text-2xl font-semibold tracking-tight">{name}</h2>
+          <h2 className="line-clamp-3 text-xl font-semibold tracking-tight sm:text-2xl" title={name}>
+            {name}
+          </h2>
           <p className="mt-1 text-sm text-muted-foreground">
             {[a.neighborhood, a.city].filter(Boolean).join(' · ') || 'Localização não informada'} ·{' '}
             {PLATFORM_LABEL[a.platform as Platform] ?? a.platform}

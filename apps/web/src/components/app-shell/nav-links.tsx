@@ -2,12 +2,13 @@
 
 import Link from 'next/link'
 import { usePathname } from 'next/navigation'
+import { Suspense } from 'react'
 import { cn } from '@/lib/utils'
 import { NAV_ITEMS, activeNavHref } from './nav-items'
 
-export function NavLinks({ onNavigate }: { onNavigate?: () => void }) {
-  const active = activeNavHref(usePathname())
+type Props = { onNavigate?: () => void }
 
+function NavList({ active, onNavigate }: Props & { active: string | null }) {
   return (
     <nav className="flex flex-col gap-1" aria-label="Navegação principal">
       {NAV_ITEMS.map(({ href, label, icon: Icon }) => {
@@ -33,5 +34,21 @@ export function NavLinks({ onNavigate }: { onNavigate?: () => void }) {
         )
       })}
     </nav>
+  )
+}
+
+function ActiveNavList(props: Props) {
+  return <NavList {...props} active={activeNavHref(usePathname())} />
+}
+
+/**
+ * Com Cache Components, usePathname suspende em rotas dinâmicas (ex.: /apartamentos/[id]).
+ * O fallback é a mesma lista sem destaque, então nada "pisca" além do item ativo.
+ */
+export function NavLinks(props: Props) {
+  return (
+    <Suspense fallback={<NavList {...props} active={null} />}>
+      <ActiveNavList {...props} />
+    </Suspense>
   )
 }
