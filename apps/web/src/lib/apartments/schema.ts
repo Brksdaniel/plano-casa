@@ -8,7 +8,7 @@ const empty = (v: unknown) => v === undefined || v === null || (typeof v === 'st
 const text = (max: number) =>
   z.preprocess((v) => (empty(v) ? undefined : String(v).trim()), z.string().max(max, `Máximo de ${max} caracteres.`).optional())
 
-const money = z.preprocess(
+export const moneyField = z.preprocess(
   (v) => (empty(v) ? undefined : (parseBRL(String(v)) ?? Number.NaN)),
   z.number({ error: 'Valor inválido. Use apenas números, ex.: 1.700,00' }).min(0).max(1_000_000).optional(),
 )
@@ -47,9 +47,9 @@ export const newApartmentSchema = z.object({
   neighborhood: text(120),
   city: text(120),
   notes: text(2000),
-  rent: money,
-  condoFee: money,
-  iptu: money,
+  rent: moneyField,
+  condoFee: moneyField,
+  iptu: moneyField,
   bedrooms: count('Número de quartos'),
   bathrooms: count('Número de banheiros'),
   parking: count('Número de vagas'),

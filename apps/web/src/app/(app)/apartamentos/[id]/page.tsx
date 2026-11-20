@@ -13,6 +13,8 @@ import { getApartment } from '@/lib/apartments/queries'
 import { formatBRL, formatDateTime } from '@/lib/format'
 import { createServerSupabase } from '@/lib/supabase/server'
 import { DeleteApartmentButton } from './delete-button'
+import { ManualUpdateDialog } from './manual-update-dialog'
+import { RefreshButton } from './refresh-button'
 
 export const metadata: Metadata = { title: 'Detalhes do imóvel' }
 
@@ -53,12 +55,14 @@ async function Detail({ params }: { params: Promise<{ id: string }> }) {
             <ModeBadge mode={a.monitor_mode} className="border" />
           </div>
         </div>
-        <div className="flex shrink-0 gap-2">
-          <Button variant="outline" asChild>
+        <div className="flex shrink-0 flex-wrap gap-2">
+          {a.monitor_mode === 'auto' && <RefreshButton id={a.id} />}
+          <Button variant={a.monitor_mode === 'auto' ? 'outline' : 'default'} asChild>
             <a href={a.url_original} target="_blank" rel="noreferrer noopener">
-              Abrir anúncio <ExternalLink />
+              {a.monitor_mode === 'extension' ? 'Abrir anúncio para atualizar' : 'Abrir anúncio'} <ExternalLink />
             </a>
           </Button>
+          <ManualUpdateDialog id={a.id} rent={a.rent} condoFee={a.condo_fee} iptu={a.iptu} />
           <DeleteApartmentButton id={a.id} name={name} />
         </div>
       </div>
