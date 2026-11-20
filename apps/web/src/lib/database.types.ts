@@ -200,3 +200,4 @@ export type Database = {
 }
 
 export type Tables<T extends keyof Database['tracker']['Tables']> = Database['tracker']['Tables'][T]['Row']
+export type TablesInsert<T extends keyof Database['tracker']['Tables']> = Database['tracker']['Tables'][T]['Insert']
