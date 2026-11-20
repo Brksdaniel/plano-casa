@@ -3,7 +3,8 @@ export const DEFAULT_AFTER_LOGIN = '/dashboard'
 
 // /api/cron/monitor não usa sessão: é protegido pelo CRON_SECRET dentro da própria rota.
 const PUBLIC_EXACT = new Set([LOGIN_PATH, `${LOGIN_PATH}/`, '/favicon.ico', '/robots.txt', '/api/cron/monitor'])
-const PUBLIC_PREFIXES = ['/_next/']
+// /api/extension/* autentica pelo token Bearer do usuário dentro da rota.
+const PUBLIC_PREFIXES = ['/_next/', '/api/extension/']
 
 /** Rotas acessíveis sem login. */
 export function isPublicPath(pathname: string): boolean {
