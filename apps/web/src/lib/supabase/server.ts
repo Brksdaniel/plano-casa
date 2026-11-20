@@ -1,6 +1,7 @@
 import 'server-only'
 import { createServerClient } from '@supabase/ssr'
 import { cookies } from 'next/headers'
+import { connection } from 'next/server'
 import type { Database } from '@/lib/database.types'
 import { getPublicEnv } from '@/lib/env'
 
@@ -8,6 +9,9 @@ import { getPublicEnv } from '@/lib/env'
 export async function createServerSupabase() {
   const { supabaseUrl, supabasePublishableKey } = getPublicEnv()
   const cookieStore = await cookies()
+  // Dados do usuário são sempre lidos na hora do pedido (nunca pré-renderizados).
+  // Também evita o erro "Date.now() while prerendering" (o Supabase confere a expiração do token).
+  await connection()
 
   return createServerClient<Database, 'tracker'>(supabaseUrl, supabasePublishableKey, {
     db: { schema: 'tracker' },
