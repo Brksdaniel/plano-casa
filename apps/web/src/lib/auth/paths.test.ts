@@ -11,6 +11,9 @@ describe('isPublicPath', () => {
     ['/apartamentos', false],
     ['/dashboard', false],
     ['/loginx', false],
+    ['/api/cron/monitor', true],
+    ['/api/cron', false],
+    ['/api/outra', false],
     ['/login-falso', false],
   ])('%s → %s', (path, expected) => {
     expect(isPublicPath(path)).toBe(expected)

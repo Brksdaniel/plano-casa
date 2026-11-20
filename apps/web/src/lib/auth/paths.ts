@@ -1,7 +1,8 @@
 export const LOGIN_PATH = '/login'
 export const DEFAULT_AFTER_LOGIN = '/dashboard'
 
-const PUBLIC_EXACT = new Set([LOGIN_PATH, `${LOGIN_PATH}/`, '/favicon.ico', '/robots.txt'])
+// /api/cron/monitor não usa sessão: é protegido pelo CRON_SECRET dentro da própria rota.
+const PUBLIC_EXACT = new Set([LOGIN_PATH, `${LOGIN_PATH}/`, '/favicon.ico', '/robots.txt', '/api/cron/monitor'])
 const PUBLIC_PREFIXES = ['/_next/']
 
 /** Rotas acessíveis sem login. */
