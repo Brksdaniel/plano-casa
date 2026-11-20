@@ -79,6 +79,7 @@ type Apartment = {
   last_source: DataSource | null
   consecutive_failures: number
   consecutive_not_found: number
+  last_not_found_at: string | null
   archived_at: string | null
   created_at: string
   updated_at: string
@@ -105,6 +106,7 @@ type ApartmentSnapshot = {
   confidence: ConfidenceLevel | null
   raw: Json | null
   error: string | null
+  run_id: string | null
 }
 
 type ApartmentPriceHistory = {
@@ -186,7 +188,12 @@ export type Database = {
       notifications: Table<Notification, 'user_id' | 'kind' | 'title' | 'dedupe_key', 'id'>
       monitoring_logs: Table<MonitoringLog, 'run_id' | 'trigger' | 'outcome', 'id'>
     }
-    Views: { [_ in never]: never }
+    Views: {
+      apartment_price_trend: {
+        Row: { apartment_id: string; user_id: string; latest_rent: number; previous_rent: number | null; changed_at: string }
+        Relationships: []
+      }
+    }
     Functions: { [_ in never]: never }
     Enums: {
       apartment_status: ApartmentStatus
@@ -201,3 +208,4 @@ export type Database = {
 
 export type Tables<T extends keyof Database['tracker']['Tables']> = Database['tracker']['Tables'][T]['Row']
 export type TablesInsert<T extends keyof Database['tracker']['Tables']> = Database['tracker']['Tables'][T]['Insert']
+export type TablesUpdate<T extends keyof Database['tracker']['Tables']> = Database['tracker']['Tables'][T]['Update']
