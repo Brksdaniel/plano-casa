@@ -1,6 +1,7 @@
 import type { ParsedListingUrl, Platform } from '../types'
 import { extractChavesNaMao } from './chavesnamao'
 import { extractGeneric } from './generic'
+import { extractZap } from './zap'
 import { extractFromSlug } from './slug'
 import { type Extraction, FIELD_KEYS, emptyExtraction } from './types'
 
@@ -13,7 +14,12 @@ export function extractFromUrlOnly(parsed: ParsedListingUrl): Extraction {
 
 /** Lê uma página já baixada e completa com o link só os campos que a página não trouxe. */
 export function extractFromPage(html: string, parsed: ParsedListingUrl, status: number): Extraction {
-  const page = parsed.platform === 'chavesnamao' ? extractChavesNaMao(html, parsed, status) : extractGeneric(html, parsed, status)
+  const page =
+    parsed.platform === 'chavesnamao'
+      ? extractChavesNaMao(html, parsed, status)
+      : parsed.platform === 'zap' || parsed.platform === 'vivareal'
+        ? extractZap(html, parsed, status)
+        : extractGeneric(html, parsed, status)
   if (page.pageKind !== 'listing') return page
 
   const fromUrl = extractFromUrlOnly(parsed)
