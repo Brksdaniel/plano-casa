@@ -7,7 +7,7 @@
     "noUncheckedIndexedAccess": true,
     "skipLibCheck": true,
     "lib": ["ES2022", "DOM"],
-    "types": [],
+    "types": ["node"],
     "noEmit": true
   },
   "include": ["src"]

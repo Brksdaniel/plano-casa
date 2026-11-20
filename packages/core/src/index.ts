@@ -1,3 +1,8 @@
 export const CORE_VERSION = '0.1.0'
 export * from './types'
 export * from './url'
+export * from './money'
+export * from './html'
+export * from './extract/types'
+export { extractChavesNaMao } from './extract/chavesnamao'
+export { extractGeneric } from './extract/generic'
