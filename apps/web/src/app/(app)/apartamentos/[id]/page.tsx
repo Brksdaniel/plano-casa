@@ -9,8 +9,10 @@ import { ModeBadge, StatusBadge } from '@/components/apartments/status-badge'
 import { Button } from '@/components/ui/button'
 import { Skeleton } from '@/components/ui/skeleton'
 import { MODE_META, STATUS_META, displayName } from '@/lib/apartments/meta'
-import { getApartment } from '@/lib/apartments/queries'
-import { formatBRL, formatDateTime } from '@/lib/format'
+import { getApartment, recentChanges } from '@/lib/apartments/queries'
+import { describeChange } from '@/lib/apartments/trend'
+import { ChangeIcon } from '@/components/apartments/change-icon'
+import { formatBRL, formatDateTime, formatRelative } from '@/lib/format'
 import { createServerSupabase } from '@/lib/supabase/server'
 import { DeleteApartmentButton } from './delete-button'
 import { ManualUpdateDialog } from './manual-update-dialog'
@@ -33,8 +35,12 @@ async function Detail({ params }: { params: Promise<{ id: string }> }) {
   const { id } = await params
   if (!UUID_RE.test(id)) notFound()
   const supabase = await createServerSupabase()
-  const a = await getApartment(supabase, id)
+  const [a, changes] = await Promise.all([
+    getApartment(supabase, id),
+    recentChanges(supabase, { days: 3650, limit: 10, apartmentId: id }),
+  ])
   if (!a) notFound()
+  const now = new Date()
 
   const name = displayName(a)
   const dash = (v: number | string | null, suffix = '') => (v === null || v === '' ? '—' : `${v}${suffix}`)
@@ -84,7 +90,7 @@ async function Detail({ params }: { params: Promise<{ id: string }> }) {
               lastSuccessAt={a.last_success_at}
               lastSource={a.last_source}
               confidence={a.confidence}
-              now={new Date()}
+              now={now}
               className="mt-2"
             />
             <p className="mt-3 text-xs text-muted-foreground">{STATUS_META[a.status].hint}</p>
@@ -130,9 +136,30 @@ async function Detail({ params }: { params: Promise<{ id: string }> }) {
         </section>
       )}
 
+      <section className="rounded-2xl border bg-card p-5 shadow-xs">
+        <h3 className="font-semibold">Últimas alterações</h3>
+        {changes.length === 0 ? (
+          <p className="mt-2 text-sm text-muted-foreground">Nenhuma mudança detectada até agora.</p>
+        ) : (
+          <ol className="mt-3 space-y-3">
+            {changes.map((c) => (
+              <li key={c.id} className="flex items-start gap-3">
+                <ChangeIcon kind={c.kind} />
+                <div className="min-w-0 flex-1">
+                  <p className="text-sm">{describeChange(c)}</p>
+                  <p className="text-xs text-muted-foreground" title={formatDateTime(c.detected_at)}>
+                    {formatRelative(c.detected_at, now)}
+                  </p>
+                </div>
+              </li>
+            ))}
+          </ol>
+        )}
+      </section>
+
       <section className="flex items-center gap-3 rounded-2xl border border-dashed bg-card/60 p-5 text-sm text-muted-foreground">
         <LineChart className="size-5 shrink-0" />
-        Gráfico e histórico de preços chegam na Etapa 5. O primeiro preço já foi guardado.
+        O gráfico da evolução do preço chega na Etapa 5. Cada leitura já está sendo guardada.
       </section>
     </div>
   )

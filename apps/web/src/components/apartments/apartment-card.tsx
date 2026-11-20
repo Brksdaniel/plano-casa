@@ -4,10 +4,22 @@ import { displayName } from '@/lib/apartments/meta'
 import type { ApartmentCardData } from '@/lib/apartments/queries'
 import { formatBRL } from '@/lib/format'
 import { cn } from '@/lib/utils'
+import type { Trend } from '@/lib/apartments/trend'
 import { Freshness } from './freshness'
+import { PriceTrendBadge } from './price-trend'
 import { ModeBadge, StatusBadge } from './status-badge'
 
-export function ApartmentCard({ apartment: a, now, highlight }: { apartment: ApartmentCardData; now: Date; highlight?: boolean }) {
+export function ApartmentCard({
+  apartment: a,
+  now,
+  highlight,
+  trend,
+}: {
+  apartment: ApartmentCardData
+  now: Date
+  highlight?: boolean
+  trend?: Trend
+}) {
   const place = [a.neighborhood, a.city].filter(Boolean).join(' · ')
   const hasFees = a.condo_fee !== null || a.iptu !== null
 
@@ -72,10 +84,13 @@ export function ApartmentCard({ apartment: a, now, highlight }: { apartment: Apa
         <div className="mt-auto border-t pt-3">
           {a.rent !== null ? (
             <>
-              <p className="text-xl font-semibold tracking-tight">
-                {formatBRL(a.rent)}
-                <span className="ml-1 text-xs font-normal text-muted-foreground">/mês</span>
-              </p>
+              <div className="flex flex-wrap items-center gap-x-2 gap-y-1">
+                <p className="text-xl font-semibold tracking-tight">
+                  {formatBRL(a.rent)}
+                  <span className="ml-1 text-xs font-normal text-muted-foreground">/mês</span>
+                </p>
+                <PriceTrendBadge trend={trend} />
+              </div>
               <p className="mt-0.5 text-xs text-muted-foreground">
                 {hasFees
                   ? `Cond. ${formatBRL(a.condo_fee)} · IPTU ${formatBRL(a.iptu)} · Total ${formatBRL(a.total_monthly)}`

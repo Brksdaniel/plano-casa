@@ -4,10 +4,13 @@ import Link from 'next/link'
 import { Suspense } from 'react'
 import { AddApartmentButton } from '@/components/add-apartment-button'
 import { ApartmentCard } from '@/components/apartments/apartment-card'
+import { ChangeIcon } from '@/components/apartments/change-icon'
 import { EmptyState } from '@/components/empty-state'
 import { Skeleton } from '@/components/ui/skeleton'
-import { listApartments } from '@/lib/apartments/queries'
-import { formatBRL } from '@/lib/format'
+import { displayName } from '@/lib/apartments/meta'
+import { listApartments, listPriceTrends, recentChanges } from '@/lib/apartments/queries'
+import { describeChange, priceTrend } from '@/lib/apartments/trend'
+import { formatBRL, formatRelative } from '@/lib/format'
 import { createServerSupabase } from '@/lib/supabase/server'
 import { cn } from '@/lib/utils'
 
@@ -42,20 +45,29 @@ function Kpi({
 
 async function Overview() {
   const supabase = await createServerSupabase()
-  const apartments = await listApartments(supabase)
+  const [apartments, trends, changes] = await Promise.all([
+    listApartments(supabase),
+    listPriceTrends(supabase),
+    recentChanges(supabase, { days: 30, limit: 60 }),
+  ])
   const now = new Date()
+  const byId = new Map(apartments.map((a) => [a.id, a]))
+  const within = (iso: string, days: number) => now.getTime() - new Date(iso).getTime() <= days * 86_400_000
 
   const available = apartments.filter((a) => a.status === 'ativo').length
   const withRent = apartments.filter((a) => a.rent !== null)
   const avg = withRent.length ? withRent.reduce((s, a) => s + a.total_monthly, 0) / withRent.length : null
+  const reductions = new Set(changes.filter((c) => c.kind === 'price_down' && within(c.detected_at, 14)).map((c) => c.apartment_id))
+  const changed = new Set(changes.filter((c) => within(c.detected_at, 7)).map((c) => c.apartment_id))
+  const timeline = changes.filter((c) => byId.has(c.apartment_id)).slice(0, 8)
 
   return (
     <>
       <section aria-label="Indicadores" className="grid grid-cols-2 gap-3 sm:gap-4 lg:grid-cols-5">
         <Kpi label="Monitorados" icon={Building2} value={String(apartments.length)} caption="imóveis cadastrados" />
         <Kpi label="Disponíveis" icon={CheckCircle2} value={String(available)} caption="ativos na última leitura" />
-        <Kpi label="Reduções recentes" icon={TrendingDown} value="—" caption="a partir da Etapa 3" muted />
-        <Kpi label="Com alterações" icon={Activity} value="—" caption="a partir da Etapa 3" muted />
+        <Kpi label="Reduções recentes" icon={TrendingDown} value={String(reductions.size)} caption="aluguel caiu nos últimos 14 dias" />
+        <Kpi label="Com alterações" icon={Activity} value={String(changed.size)} caption="mudaram nos últimos 7 dias" />
         <Kpi
           label="Média do total mensal"
           icon={Wallet}
@@ -74,19 +86,53 @@ async function Overview() {
           action={<AddApartmentButton />}
         />
       ) : (
-        <section className="space-y-4">
-          <div className="flex items-end justify-between">
-            <h3 className="font-semibold">Adicionados recentemente</h3>
-            <Link href="/apartamentos" className="text-sm font-medium text-primary hover:underline">
-              Ver todos
-            </Link>
-          </div>
-          <div className="grid gap-4 sm:grid-cols-2 xl:grid-cols-3">
-            {apartments.slice(0, 3).map((a) => (
-              <ApartmentCard key={a.id} apartment={a} now={now} />
-            ))}
-          </div>
-        </section>
+        <>
+          <section className="space-y-4">
+            <h3 className="font-semibold">Novidades</h3>
+            {timeline.length === 0 ? (
+              <p className="rounded-2xl border border-dashed bg-card/60 p-5 text-sm text-muted-foreground">
+                Nenhuma mudança detectada nos últimos 30 dias. As verificações automáticas aparecem aqui quando algo mudar.
+              </p>
+            ) : (
+              <ol className="divide-y overflow-hidden rounded-2xl border bg-card shadow-xs">
+                {timeline.map((c) => {
+                  const apt = byId.get(c.apartment_id)!
+                  return (
+                    <li key={c.id}>
+                      <Link href={`/apartamentos/${apt.id}`} className="flex items-start gap-3 px-4 py-3 transition-colors hover:bg-muted/50">
+                        <ChangeIcon kind={c.kind} />
+                        <div className="min-w-0 flex-1">
+                          <p className="truncate text-sm font-medium">{displayName(apt)}</p>
+                          <p className="text-sm text-muted-foreground">{describeChange(c)}</p>
+                        </div>
+                        <span className="shrink-0 text-xs text-muted-foreground">{formatRelative(c.detected_at, now)}</span>
+                      </Link>
+                    </li>
+                  )
+                })}
+              </ol>
+            )}
+          </section>
+
+          <section className="space-y-4">
+            <div className="flex items-end justify-between">
+              <h3 className="font-semibold">Adicionados recentemente</h3>
+              <Link href="/apartamentos" className="text-sm font-medium text-primary hover:underline">
+                Ver todos
+              </Link>
+            </div>
+            <div className="grid gap-4 sm:grid-cols-2 xl:grid-cols-3">
+              {apartments.slice(0, 3).map((a) => (
+                <ApartmentCard
+                  key={a.id}
+                  apartment={a}
+                  now={now}
+                  trend={priceTrend(trends.get(a.id)?.latest_rent ?? null, trends.get(a.id)?.previous_rent ?? null)}
+                />
+              ))}
+            </div>
+          </section>
+        </>
       )}
     </>
   )

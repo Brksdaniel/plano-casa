@@ -5,14 +5,15 @@ import { AddApartmentButton } from '@/components/add-apartment-button'
 import { ApartmentCard } from '@/components/apartments/apartment-card'
 import { EmptyState } from '@/components/empty-state'
 import { Skeleton } from '@/components/ui/skeleton'
-import { listApartments } from '@/lib/apartments/queries'
+import { listApartments, listPriceTrends } from '@/lib/apartments/queries'
+import { priceTrend } from '@/lib/apartments/trend'
 import { createServerSupabase } from '@/lib/supabase/server'
 
 export const metadata: Metadata = { title: 'Meus Apartamentos' }
 
 async function ApartmentList({ searchParams }: { searchParams: Promise<{ novo?: string }> }) {
   const supabase = await createServerSupabase()
-  const [apartments, { novo }] = await Promise.all([listApartments(supabase), searchParams])
+  const [apartments, trends, { novo }] = await Promise.all([listApartments(supabase), listPriceTrends(supabase), searchParams])
   const now = new Date()
 
   if (apartments.length === 0) {
@@ -38,7 +39,13 @@ async function ApartmentList({ searchParams }: { searchParams: Promise<{ novo?: 
       </p>
       <div className="grid gap-4 sm:grid-cols-2 xl:grid-cols-3 2xl:grid-cols-4">
         {apartments.map((a) => (
-          <ApartmentCard key={a.id} apartment={a} now={now} highlight={a.id === novo} />
+          <ApartmentCard
+            key={a.id}
+            apartment={a}
+            now={now}
+            highlight={a.id === novo}
+            trend={priceTrend(trends.get(a.id)?.latest_rent ?? null, trends.get(a.id)?.previous_rent ?? null)}
+          />
         ))}
       </div>
     </div>
