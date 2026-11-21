@@ -28,12 +28,17 @@ export function num(value: unknown): number | undefined {
   return Number.isFinite(n) && n > 0 ? n : undefined
 }
 
+/** Limites alinhados com o que a API do site aceita da extensão. */
+export const MAX_IMAGES = 40
+export const MAX_IMAGE_URL = 1000
+
 export function images(value: unknown): string[] {
   const list = Array.isArray(value) ? value : [value]
   const out: string[] = []
   for (const item of list) {
+    if (out.length >= MAX_IMAGES) break
     const url = typeof item === 'string' ? item : str(obj(item)?.url)
-    if (url && /^https?:\/\//i.test(url) && !out.includes(url)) out.push(url)
+    if (url && url.length <= MAX_IMAGE_URL && /^https:\/\//i.test(url) && !out.includes(url)) out.push(url)
   }
   return out
 }

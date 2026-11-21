@@ -14,6 +14,9 @@ describe('isPublicPath', () => {
     ['/api/cron/monitor', true],
     ['/api/cron', false],
     ['/api/outra', false],
+    ['/api/extension/capture', true],
+    ['/api/extension/tracked', true],
+    ['/api/extensionx', false],
     ['/login-falso', false],
   ])('%s → %s', (path, expected) => {
     expect(isPublicPath(path)).toBe(expected)

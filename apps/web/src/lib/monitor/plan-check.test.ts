@@ -151,3 +151,33 @@ describe('planCheck', () => {
     expect(p.log.outcome).toBe('not_found')
   })
 })
+
+describe('planCheck com source extension', () => {
+  const ZAP_URL = 'https://www.zapimoveis.com.br/imovel/aluguel-apartamento-2-quartos-afonso-pena-sao-jose-dos-pinhais-pr-39m2-id-2923596535/'
+  const zp = (() => {
+    const r = parseListingUrl(ZAP_URL)
+    if (!r.ok) throw new Error(r.error)
+    return r.value
+  })()
+  const zapRead: ListingRead = { ok: true, parsed: zp, extraction: extractFromPage(fx('zap-apto.html'), zp, 200), fetch: 'fetched', httpStatus: 200 }
+
+  it('marca tudo como extensão e corrige o aluguel de teste', () => {
+    const p = planCheck({
+      apartment: apartment({ platform: 'zap', monitor_mode: 'extension', status: 'nao_verificado', rent: 1500, condo_fee: null, last_source: 'manual' }),
+      read: zapRead,
+      lastPrice: { rent: 1500, condo_fee: null, iptu: null, recorded_at: '2026-11-21T06:00:00Z' },
+      lastSnapshot: null,
+      now: NOW,
+      runId: RUN,
+      trigger: 'extension',
+      source: 'extension',
+    })
+    expect(p.snapshot.source).toBe('extension')
+    expect(p.apartmentUpdate).toMatchObject({ last_source: 'extension', rent: 1200, condo_fee: 350, iptu: 0, status: 'ativo', confidence: 'alta' })
+    expect(p.apartmentUpdate).not.toHaveProperty('monitor_mode')
+    expect(p.price).toMatchObject({ rent: 1200, source: 'extension' })
+    expect(p.changes.map((c) => c.kind)).toEqual(expect.arrayContaining(['price_down', 'status_change']))
+    expect(p.log.trigger).toBe('extension')
+    expect(p.statusRow?.source).toBe('extension')
+  })
+})

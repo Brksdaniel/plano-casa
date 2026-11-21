@@ -71,9 +71,12 @@ export function planCheck(input: {
   lastSnapshot: SnapshotValues | null
   now: Date
   runId: string
-  trigger: 'cron' | 'manual'
+  trigger: 'cron' | 'manual' | 'extension'
+  /** Quem leu a página. A extensão nunca muda o modo de monitoramento. */
+  source?: 'server' | 'extension'
 }): CheckPlan {
   const { apartment: apt, read, lastPrice, lastSnapshot, now, runId, trigger } = input
+  const source = input.source ?? 'server'
   const nowIso = now.toISOString()
   const obs = observationFrom(read)
   const extraction = read.ok ? read.extraction : null
@@ -141,12 +144,12 @@ export function planCheck(input: {
     consecutive_not_found: result.consecutiveNotFound,
     last_not_found_at: result.lastNotFoundAt,
   }
-  if (result.demoted) update.monitor_mode = 'extension'
+  if (result.demoted && source === 'server') update.monitor_mode = 'extension'
 
   const merged = { rent: apt.rent, condo_fee: apt.condo_fee, iptu: apt.iptu, bedrooms: apt.bedrooms, city: apt.city }
   if (isListing) {
     update.last_success_at = nowIso
-    update.last_source = 'server'
+    update.last_source = source
     for (const [key, column] of FIELD_COLUMN) {
       const value = extraction.fields[key]
       const method = extraction.methods[key]
@@ -173,12 +176,12 @@ export function planCheck(input: {
       !lastPrice || lastPrice.rent !== values.rent || lastPrice.condo_fee !== values.condo_fee || lastPrice.iptu !== values.iptu
     const stale = !lastPrice || now.getTime() - new Date(lastPrice.recorded_at).getTime() > PRICE_REFRESH_HOURS * 3_600_000
     if (changed || stale) {
-      price = { user_id: apt.user_id, apartment_id: apt.id, recorded_at: nowIso, ...values, source: 'server' }
+      price = { user_id: apt.user_id, apartment_id: apt.id, recorded_at: nowIso, ...values, source }
     }
   }
 
   const statusRow: CheckPlan['statusRow'] =
-    status !== apt.status || result.demoted
+    status !== apt.status || (result.demoted && source === 'server')
       ? {
           user_id: apt.user_id,
           apartment_id: apt.id,
@@ -186,7 +189,7 @@ export function planCheck(input: {
           from_status: apt.status,
           to_status: status,
           evidence: result.evidence,
-          source: 'server',
+          source,
         }
       : null
 
@@ -195,7 +198,7 @@ export function planCheck(input: {
     user_id: apt.user_id,
     apartment_id: apt.id,
     checked_at: nowIso,
-    source: 'server',
+    source,
     run_id: runId,
     http_status: httpStatus,
     page_kind: read.ok && read.fetch === 'fetched' ? read.extraction.pageKind : null,

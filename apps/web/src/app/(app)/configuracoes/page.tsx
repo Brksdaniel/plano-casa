@@ -1,10 +1,12 @@
-import { Database, Mail, Puzzle, Timer } from 'lucide-react'
+import { Database, Mail, Timer } from 'lucide-react'
 import type { Metadata } from 'next'
 import { Suspense } from 'react'
 import { Badge } from '@/components/ui/badge'
 import { Skeleton } from '@/components/ui/skeleton'
 import { type IntegrationStatus, supabaseStatus } from '@/lib/integrations/status'
+import { formatRelative } from '@/lib/format'
 import { createServerSupabase } from '@/lib/supabase/server'
+import { ExtensionConnect } from './extension-connect'
 import { cn } from '@/lib/utils'
 
 export const metadata: Metadata = { title: 'Configurações' }
@@ -73,6 +75,31 @@ async function SupabaseRow() {
   )
 }
 
+async function MonitorRow() {
+  const supabase = await createServerSupabase()
+  const { data } = await supabase
+    .from('monitoring_logs')
+    .select('started_at')
+    .eq('trigger', 'cron')
+    .order('started_at', { ascending: false })
+    .limit(1)
+    .maybeSingle()
+  const serverReady = Boolean(process.env.SUPABASE_SECRET_KEY && process.env.CRON_SECRET)
+  const status: IntegrationStatus = data
+    ? { state: 'ok', label: 'Ativo', detail: `Verifica de hora em hora. Última execução com imóveis na vez: ${formatRelative(data.started_at)}.` }
+    : serverReady
+      ? { state: 'pending', label: 'Aguardando', detail: 'Configurado. Ainda não houve verificação agendada com imóveis na vez.' }
+      : { state: 'pending', label: 'Não configurado' }
+  return (
+    <IntegrationRow
+      icon={Timer}
+      name="Monitoramento automático"
+      description="Verificações de hora em hora; cada imóvel do servidor é lido a cada ~6 h."
+      status={status}
+    />
+  )
+}
+
 export default function SettingsPage() {
   const resendConfigured = Boolean(process.env.RESEND_API_KEY)
 
@@ -91,24 +118,16 @@ export default function SettingsPage() {
           <Suspense fallback={<li className="px-5 py-4"><Skeleton className="h-12 w-full" /></li>}>
             <SupabaseRow />
           </Suspense>
-          <IntegrationRow
-            icon={Timer}
-            name="Monitoramento automático"
-            description="Agendamento das verificações a cada 6 horas. Será configurado na Etapa 3."
-            status={{ state: 'pending', label: 'Não configurado' }}
-          />
+          <Suspense fallback={<li className="px-5 py-4"><Skeleton className="h-12 w-full" /></li>}>
+            <MonitorRow />
+          </Suspense>
           <IntegrationRow
             icon={Mail}
             name="E-mail (Resend)"
             description="Envio de notificações e do resumo diário. Será configurado na Etapa 7."
             status={resendConfigured ? { state: 'ok', label: 'Configurado' } : { state: 'pending', label: 'Não configurado' }}
           />
-          <IntegrationRow
-            icon={Puzzle}
-            name="Extensão do Chrome"
-            description="Captura de anúncios de sites que bloqueiam acesso automático. Disponível na Etapa 4."
-            status={{ state: 'pending', label: 'Não conectada' }}
-          />
+          <ExtensionConnect />
         </ul>
       </section>
     </div>

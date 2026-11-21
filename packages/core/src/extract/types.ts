@@ -59,6 +59,8 @@ export function emptyExtraction(parsed: ParsedListingUrl, pageKind: Extraction['
 export function setField(e: Extraction, key: FieldKey, value: string | number | undefined, method: FieldMethod) {
   if (value === undefined || value === null || value === '') return
   if (typeof value === 'number' && !Number.isFinite(value)) return
-  e.fields[key] = typeof value === 'string' ? value.trim() : value
+  // Limites alinhados com o que a API do site aceita da extensão.
+  const maxLen = key === 'description' ? 10_000 : 2_000
+  e.fields[key] = typeof value === 'string' ? value.trim().slice(0, maxLen) : value
   e.methods[key] = method
 }
