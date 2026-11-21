@@ -38,9 +38,9 @@ export function extractGeneric(html: string, parsed: ParsedListingUrl, status: n
   if (imgs.length) {
     e.images = imgs
     setField(e, 'mainImageUrl', imgs[0], 'jsonld')
-  } else if (meta['og:image'] && /^https?:\/\//i.test(meta['og:image'])) {
-    e.images = [meta['og:image']]
-    setField(e, 'mainImageUrl', meta['og:image'], 'meta')
+  } else {
+    e.images = images(meta['og:image'])
+    setField(e, 'mainImageUrl', e.images[0], 'meta')
   }
 
   setField(e, 'description', str(product?.description), 'jsonld')
