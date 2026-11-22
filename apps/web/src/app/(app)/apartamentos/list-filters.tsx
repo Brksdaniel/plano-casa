@@ -45,7 +45,7 @@ export function ListFilters() {
 
   return (
     <div className={cn('space-y-3 transition-opacity', pending && 'opacity-60')}>
-      <div className="flex gap-1.5 overflow-x-auto pb-1" role="tablist" aria-label="Situação">
+      <div className="flex gap-1.5 overflow-x-auto pb-1 [scrollbar-width:none]" role="tablist" aria-label="Situação">
         {SITUACAO.map(([value, label]) => (
           <button
             key={value}
@@ -66,7 +66,7 @@ export function ListFilters() {
           <Search className="pointer-events-none absolute top-1/2 left-2.5 size-4 -translate-y-1/2 text-muted-foreground" />
           <Input value={q} onChange={(e) => setQ(e.target.value)} placeholder="Buscar por nome, bairro ou cidade" className="pl-8" aria-label="Buscar" />
         </div>
-        <div className="flex gap-2">
+        <div className="flex flex-wrap gap-2 sm:flex-nowrap">
           <select
             aria-label="Modo de monitoramento"
             className={cn(selectClass, 'flex-1 sm:flex-none')}
