@@ -7,6 +7,7 @@ import { type IntegrationStatus, supabaseStatus } from '@/lib/integrations/statu
 import { formatRelative } from '@/lib/format'
 import { createServerSupabase } from '@/lib/supabase/server'
 import { ExtensionConnect } from './extension-connect'
+import { PreferencesForm } from './preferences-form'
 import { cn } from '@/lib/utils'
 
 export const metadata: Metadata = { title: 'Configurações' }
@@ -100,6 +101,24 @@ async function MonitorRow() {
   )
 }
 
+async function PreferencesSection({ emailReady }: { emailReady: boolean }) {
+  const supabase = await createServerSupabase()
+  const { data } = await supabase.from('user_preferences').select('*').maybeSingle()
+  return (
+    <PreferencesForm
+      emailReady={emailReady}
+      values={{
+        notifyEmail: data?.notify_email ?? '',
+        emailEnabled: data?.email_enabled ?? true,
+        dailyDigestEnabled: data?.daily_digest_enabled ?? true,
+        dailyDigestHour: data?.daily_digest_hour ?? 8,
+        minChangeAbs: Number(data?.min_change_abs ?? 50),
+        minChangePct: Number(data?.min_change_pct ?? 2),
+      }}
+    />
+  )
+}
+
 export default function SettingsPage() {
   const resendConfigured = Boolean(process.env.RESEND_API_KEY)
 
@@ -124,11 +143,29 @@ export default function SettingsPage() {
           <IntegrationRow
             icon={Mail}
             name="E-mail (Resend)"
-            description="Envio de notificações e do resumo diário. Será configurado na Etapa 7."
-            status={resendConfigured ? { state: 'ok', label: 'Configurado' } : { state: 'pending', label: 'Não configurado' }}
+            description="Envio dos avisos e do resumo diário por e-mail."
+            status={
+              resendConfigured
+                ? { state: 'ok', label: 'Configurado' }
+                : {
+                    state: 'pending',
+                    label: 'Não configurado',
+                    detail: 'Crie uma chave em resend.com e adicione RESEND_API_KEY na Vercel (veja docs/GUIA.md). Os avisos no site funcionam sem isso.',
+                  }
+            }
           />
           <ExtensionConnect />
         </ul>
+      </section>
+
+      <section className="overflow-hidden rounded-2xl border bg-card shadow-xs">
+        <div className="border-b px-5 py-4">
+          <h3 className="font-semibold">Notificações</h3>
+          <p className="mt-0.5 text-sm text-muted-foreground">Quando e como você quer ser avisado.</p>
+        </div>
+        <Suspense fallback={<div className="p-5"><Skeleton className="h-48 w-full" /></div>}>
+          <PreferencesSection emailReady={resendConfigured} />
+        </Suspense>
       </section>
     </div>
   )

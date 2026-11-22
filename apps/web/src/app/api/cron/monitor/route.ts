@@ -3,6 +3,7 @@ import { NextResponse, type NextRequest } from 'next/server'
 import { MissingEnvError, getServiceEnv } from '@/lib/env'
 import { MAX_PER_RUN, SAME_PLATFORM_DELAY_MS, dueCutoff, isAuthorizedCron } from '@/lib/monitor/cron-auth'
 import { type RunCheckResult, runCheck } from '@/lib/monitor/run-check'
+import { type NotificationRun, processNotifications } from '@/lib/notifications/run'
 import { createAdminSupabase } from '@/lib/supabase/admin'
 
 export const maxDuration = 60
@@ -27,6 +28,15 @@ async function handle(request: NextRequest) {
 
   const admin = createAdminSupabase()
   const runId = randomUUID()
+
+  // Notificações primeiro (rápido e com tempo garantido): mudanças desta rodada entram na próxima.
+  let notifications: NotificationRun | { error: string }
+  try {
+    notifications = await processNotifications(admin)
+  } catch (e) {
+    console.error('[monitor] notificações', e)
+    notifications = { error: 'Falha ao processar notificações' }
+  }
   const cutoff = dueCutoff(new Date())
 
   const { data: due, error } = await admin
@@ -37,7 +47,7 @@ async function handle(request: NextRequest) {
     .or(`last_check_at.is.null,last_check_at.lt.${cutoff}`)
     .order('last_check_at', { ascending: true, nullsFirst: true })
     .limit(MAX_PER_RUN)
-  if (error) return NextResponse.json({ error: 'Falha ao buscar imóveis', runId }, { status: 500 })
+  if (error) return NextResponse.json({ error: 'Falha ao buscar imóveis', runId, notifications }, { status: 500 })
 
   const results: RunCheckResult[] = []
   let lastPlatform: string | null = null
@@ -52,7 +62,7 @@ async function handle(request: NextRequest) {
     }
   }
 
-  return NextResponse.json({ runId, checked: results.length, results })
+  return NextResponse.json({ runId, checked: results.length, results, notifications })
 }
 
 export const GET = handle

@@ -15,7 +15,7 @@ function PageTitle() {
   return <>{NAV_ITEMS.find((i) => i.href === active)?.label ?? ''}</>
 }
 
-export function Topbar({ mobileFooter }: { mobileFooter: ReactNode }) {
+export function Topbar({ mobileFooter, bellBadge }: { mobileFooter: ReactNode; bellBadge?: ReactNode }) {
   return (
     <header className="sticky top-0 z-30 flex h-16 items-center gap-2 border-b bg-background/80 px-4 backdrop-blur-md sm:px-6 lg:px-8">
       <MobileNav footer={mobileFooter} />
@@ -27,9 +27,10 @@ export function Topbar({ mobileFooter }: { mobileFooter: ReactNode }) {
         </Suspense>
       </h1>
       <div className="ml-auto flex items-center gap-1">
-        <Button variant="ghost" size="icon" asChild>
+        <Button variant="ghost" size="icon" asChild className="relative">
           <Link href="/notificacoes" aria-label="Notificações">
             <Bell />
+            {bellBadge}
           </Link>
         </Button>
         <ThemeToggle />
