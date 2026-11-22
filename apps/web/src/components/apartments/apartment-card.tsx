@@ -4,8 +4,10 @@ import { displayName } from '@/lib/apartments/meta'
 import type { ApartmentCardData } from '@/lib/apartments/queries'
 import { formatBRL } from '@/lib/format'
 import { cn } from '@/lib/utils'
+import type { Opportunity } from '@/lib/apartments/opportunity'
 import type { Trend } from '@/lib/apartments/trend'
 import { Freshness } from './freshness'
+import { OpportunityBadge } from './opportunity-badge'
 import { PriceTrendBadge } from './price-trend'
 import { ModeBadge, StatusBadge } from './status-badge'
 
@@ -14,11 +16,13 @@ export function ApartmentCard({
   now,
   highlight,
   trend,
+  opportunity,
 }: {
   apartment: ApartmentCardData
   now: Date
   highlight?: boolean
   trend?: Trend
+  opportunity?: Opportunity
 }) {
   const place = [a.neighborhood, a.city].filter(Boolean).join(' · ')
   const hasFees = a.condo_fee !== null || a.iptu !== null
@@ -61,6 +65,7 @@ export function ApartmentCard({
               <span className="truncate">{place}</span>
             </p>
           )}
+          <OpportunityBadge opportunity={opportunity} className="mt-2" />
         </div>
 
         <div className="flex flex-wrap gap-x-3 gap-y-1 text-sm text-muted-foreground">

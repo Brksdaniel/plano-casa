@@ -107,3 +107,25 @@ export async function manualUpdateAction(id: string, form: FormData): Promise<Ac
     message: plan.changes.length ? `Atualizado: ${plan.changes.length} ${plan.changes.length === 1 ? 'mudança registrada' : 'mudanças registradas'}.` : 'Atualizado: nada mudou.',
   }
 }
+
+const detailsSchema = z.object({
+  customName: z.string().trim().max(120, 'Nome muito longo (máx. 120).'),
+  priority: z.coerce.number().int().min(1).max(5),
+  notes: z.string().trim().max(5000, 'Observações muito longas (máx. 5000).'),
+})
+
+/** Edita nome personalizado, prioridade e observações (RLS: só o dono). */
+export async function updateDetailsAction(id: string, form: FormData): Promise<ActionResult> {
+  if (!z.uuid().safeParse(id).success) return { ok: false, error: 'Imóvel inválido.' }
+  const parsed = detailsSchema.safeParse(Object.fromEntries(form.entries()))
+  if (!parsed.success) return { ok: false, error: parsed.error.issues[0]?.message ?? 'Confira os campos.' }
+  const supabase = await requireUser()
+  const { customName, priority, notes } = parsed.data
+  const { error, count } = await supabase
+    .from('apartments')
+    .update({ custom_name: customName || null, priority, notes: notes || null }, { count: 'exact' })
+    .eq('id', id)
+  if (error) return { ok: false, error: 'Não foi possível salvar agora. Tente novamente.' }
+  if (!count) return { ok: false, error: 'Imóvel não encontrado.' }
+  return { ok: true, message: 'Dados do imóvel salvos.' }
+}

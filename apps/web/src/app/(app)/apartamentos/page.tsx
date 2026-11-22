@@ -1,20 +1,31 @@
-import { Building2, CheckCircle2 } from 'lucide-react'
+import { Building2, CheckCircle2, SearchX } from 'lucide-react'
 import type { Metadata } from 'next'
 import { Suspense } from 'react'
 import { AddApartmentButton } from '@/components/add-apartment-button'
 import { ApartmentCard } from '@/components/apartments/apartment-card'
 import { EmptyState } from '@/components/empty-state'
 import { Skeleton } from '@/components/ui/skeleton'
+import { applyListFilters, parseListFilters } from '@/lib/apartments/filters'
+import { loadOpportunities } from '@/lib/apartments/opportunity-data'
 import { listApartments, listPriceTrends } from '@/lib/apartments/queries'
 import { priceTrend } from '@/lib/apartments/trend'
 import { createServerSupabase } from '@/lib/supabase/server'
+import { ListFilters } from './list-filters'
 
 export const metadata: Metadata = { title: 'Meus Apartamentos' }
 
-async function ApartmentList({ searchParams }: { searchParams: Promise<{ novo?: string }> }) {
+type Params = Record<string, string | string[] | undefined>
+
+async function ApartmentList({ searchParams }: { searchParams: Promise<Params> }) {
   const supabase = await createServerSupabase()
-  const [apartments, trends, { novo }] = await Promise.all([listApartments(supabase), listPriceTrends(supabase), searchParams])
   const now = new Date()
+  const [apartments, trends, opportunities, params] = await Promise.all([
+    listApartments(supabase),
+    listPriceTrends(supabase),
+    loadOpportunities(supabase, now),
+    searchParams,
+  ])
+  const novo = typeof params.novo === 'string' ? params.novo : undefined
 
   if (apartments.length === 0) {
     return (
@@ -27,6 +38,10 @@ async function ApartmentList({ searchParams }: { searchParams: Promise<{ novo?: 
     )
   }
 
+  const scores = new Map<string, number>()
+  for (const [id, o] of opportunities) if (o.ok) scores.set(id, o.score)
+  const visible = applyListFilters(apartments, parseListFilters(params), scores)
+
   return (
     <div className="space-y-4">
       {novo && apartments.some((a) => a.id === novo) && (
@@ -34,20 +49,28 @@ async function ApartmentList({ searchParams }: { searchParams: Promise<{ novo?: 
           <CheckCircle2 className="size-4 text-success" /> Imóvel adicionado. Ele aparece destacado abaixo.
         </p>
       )}
+      <ListFilters />
       <p className="text-sm text-muted-foreground">
-        {apartments.length} {apartments.length === 1 ? 'imóvel acompanhado' : 'imóveis acompanhados'}
+        {visible.length === apartments.length
+          ? `${apartments.length} ${apartments.length === 1 ? 'imóvel acompanhado' : 'imóveis acompanhados'}`
+          : `${visible.length} de ${apartments.length} imóveis`}
       </p>
-      <div className="grid gap-4 sm:grid-cols-2 xl:grid-cols-3 2xl:grid-cols-4">
-        {apartments.map((a) => (
-          <ApartmentCard
-            key={a.id}
-            apartment={a}
-            now={now}
-            highlight={a.id === novo}
-            trend={priceTrend(trends.get(a.id)?.latest_rent ?? null, trends.get(a.id)?.previous_rent ?? null)}
-          />
-        ))}
-      </div>
+      {visible.length === 0 ? (
+        <EmptyState icon={SearchX} title="Nenhum imóvel com esses filtros" description="Ajuste a busca ou clique em “Limpar”." />
+      ) : (
+        <div className="grid gap-4 sm:grid-cols-2 xl:grid-cols-3 2xl:grid-cols-4">
+          {visible.map((a) => (
+            <ApartmentCard
+              key={a.id}
+              apartment={a}
+              now={now}
+              highlight={a.id === novo}
+              opportunity={opportunities.get(a.id)}
+              trend={priceTrend(trends.get(a.id)?.latest_rent ?? null, trends.get(a.id)?.previous_rent ?? null)}
+            />
+          ))}
+        </div>
+      )}
     </div>
   )
 }
@@ -73,7 +96,7 @@ export default function ApartmentsPage({ searchParams }: PageProps<'/apartamento
         <AddApartmentButton />
       </div>
       <Suspense fallback={<ListSkeleton />}>
-        <ApartmentList searchParams={searchParams as Promise<{ novo?: string }>} />
+        <ApartmentList searchParams={searchParams as Promise<Params>} />
       </Suspense>
     </div>
   )
