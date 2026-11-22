@@ -9,7 +9,7 @@ type Client = SupabaseClient<Database, 'tracker'>
 export type DuplicateInfo = { id: string; name: string }
 
 export const CARD_COLUMNS =
-  'id, custom_name, source_title, platform, neighborhood, city, rent, condo_fee, iptu, total_monthly, bedrooms, parking, area_m2, main_image_url, monitor_mode, status, confidence, last_success_at, last_source, created_at' as const
+  'id, custom_name, source_title, platform, neighborhood, city, rent, condo_fee, iptu, total_monthly, bedrooms, parking, area_m2, main_image_url, monitor_mode, status, confidence, last_success_at, last_source, created_at, priority, url_original' as const
 
 export async function listApartments(supabase: Client) {
   const { data, error } = await supabase

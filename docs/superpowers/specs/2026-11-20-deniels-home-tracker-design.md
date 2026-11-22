@@ -256,11 +256,19 @@ Cidades de interesse: **Curitiba** e **São José dos Pinhais (PR)**. Plataforma
 - Instalação: modo desenvolvedor → "Carregar sem compactação" (`apps/extension/dist`). Sem Chrome Web Store.
 - Anúncio não acompanhado: selo discreto "Adicionar ao Deniels" que abre `/apartamentos/novo?url=…` já lendo o link.
 
+## 12.4 Decisões das Etapas 5–8 (2026-11-22)
+- Estatísticas e gráfico usam o **aluguel** (o total também aparece no gráfico, tracejado). Leituras em degrau (o valor vale até a próxima).
+- Oportunidade: razão total/mediana 0,7 → 100% do critério, 1,0 → 50%, ≥ 1,3 → 0; queda de 10% em 14 dias → 100%; mínimo de 3 comparáveis (incluindo o próprio); imóveis alugados/removidos não entram na mediana. Aviso quando condomínio/IPTU não foram informados (total subestimado).
+- Notificações são geradas no cron de hora em hora (antes das verificações, para nunca faltar tempo); `dedupe_key = change:<id>`, falha de acesso `apt:<id>:access:<último sucesso>`, resumo `digest:<usuário>:<AAAA-MM-DD de São Paulo>`. Descrição e fotos não notificam (ruído).
+- E-mail via API HTTP do Resend (sem SDK); sem `RESEND_API_KEY` tudo funciona só no site. Remetente padrão `onboarding@resend.dev` (entrega só ao dono da conta Resend).
+- Retenção: `raw` das leituras com mais de 90 dias é apagado no cron.
+- Filtros da lista ficam na URL (`?situacao=&modo=&ordem=&q=`).
+
 ## 13. Decisões pendentes do usuário
 - ~~Projeto Supabase~~ → decidido: schema `tracker` no projeto `sistema-salas`.
 - Confirmar se o sistema-salas usará login no futuro (afeta desativar cadastro público).
 - Links reais de anúncios (2–3 por plataforma usada) e cidade.
-- Conta Resend (Etapa 7).
+- Conta Resend (Etapa 7) — código pronto; falta o usuário criar a chave (docs/GUIA.md §4).
 
 ## 14. Chamadas feitas pelo assistente (revisáveis)
 - Monitoramento roda em rotas Node na Vercel (não em Edge Functions do Supabase) para compartilhar `packages/core` com a extensão num único runtime TypeScript.

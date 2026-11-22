@@ -1,13 +1,17 @@
-import { Activity, Building2, CheckCircle2, TrendingDown, Wallet } from 'lucide-react'
+import { Activity, Building2, CheckCircle2, Sparkles, TrendingDown, Wallet } from 'lucide-react'
 import type { Metadata } from 'next'
 import Link from 'next/link'
 import { Suspense } from 'react'
 import { AddApartmentButton } from '@/components/add-apartment-button'
 import { ApartmentCard } from '@/components/apartments/apartment-card'
 import { ChangeIcon } from '@/components/apartments/change-icon'
+import { MonitorHealth } from '@/components/dashboard/monitor-health'
 import { EmptyState } from '@/components/empty-state'
 import { Skeleton } from '@/components/ui/skeleton'
+import { monitoringHealth } from '@/lib/apartments/health'
 import { displayName } from '@/lib/apartments/meta'
+import { OPPORTUNITY_DISCLAIMER } from '@/lib/apartments/opportunity'
+import { loadOpportunities } from '@/lib/apartments/opportunity-data'
 import { listApartments, listPriceTrends, recentChanges } from '@/lib/apartments/queries'
 import { describeChange, priceTrend } from '@/lib/apartments/trend'
 import { formatBRL, formatRelative } from '@/lib/format'
@@ -45,12 +49,23 @@ function Kpi({
 
 async function Overview() {
   const supabase = await createServerSupabase()
-  const [apartments, trends, changes] = await Promise.all([
+  const now = new Date()
+  const [apartments, trends, changes, opportunities, lastCron] = await Promise.all([
     listApartments(supabase),
     listPriceTrends(supabase),
     recentChanges(supabase, { days: 30, limit: 60 }),
+    loadOpportunities(supabase, now),
+    supabase.from('monitoring_logs').select('started_at').eq('trigger', 'cron').order('started_at', { ascending: false }).limit(1).maybeSingle(),
   ])
-  const now = new Date()
+  const health = monitoringHealth(apartments, now)
+  const scoreOf = (id: string) => {
+    const o = opportunities.get(id)
+    return o?.ok ? o.score : null
+  }
+  const best = apartments
+    .filter((a) => scoreOf(a.id) !== null)
+    .sort((x, y) => (scoreOf(y.id) ?? 0) - (scoreOf(x.id) ?? 0))
+    .slice(0, 3)
   const byId = new Map(apartments.map((a) => [a.id, a]))
   const within = (iso: string, days: number) => now.getTime() - new Date(iso).getTime() <= days * 86_400_000
 
@@ -87,7 +102,8 @@ async function Overview() {
         />
       ) : (
         <>
-          <section className="space-y-4">
+          <div className="grid gap-8 lg:grid-cols-[1.5fr_1fr]">
+          <section className="min-w-0 space-y-4">
             <h3 className="font-semibold">Novidades</h3>
             {timeline.length === 0 ? (
               <p className="rounded-2xl border border-dashed bg-card/60 p-5 text-sm text-muted-foreground">
@@ -113,6 +129,46 @@ async function Overview() {
               </ol>
             )}
           </section>
+          <MonitorHealth
+            counts={health.counts}
+            stale={health.staleExtension}
+            lastCronAt={lastCron.data?.started_at ?? null}
+            emailConfigured={Boolean(process.env.RESEND_API_KEY)}
+            now={now}
+          />
+          </div>
+
+          <section className="space-y-4">
+            <div className="flex items-end justify-between gap-4">
+              <h3 className="flex items-center gap-2 font-semibold">
+                <Sparkles className="size-4 text-muted-foreground" /> Melhores oportunidades
+              </h3>
+              <Link href="/apartamentos?ordem=oportunidade" className="shrink-0 text-sm font-medium text-primary hover:underline">
+                Ver ranking
+              </Link>
+            </div>
+            {best.length === 0 ? (
+              <p className="rounded-2xl border border-dashed bg-card/60 p-5 text-sm text-muted-foreground">
+                Dados insuficientes para comparar: o indicador precisa de pelo menos 3 imóveis ativos com o mesmo número de quartos e
+                total mensal verificado.
+              </p>
+            ) : (
+              <>
+                <div className="grid gap-4 sm:grid-cols-2 xl:grid-cols-3">
+                  {best.map((a) => (
+                    <ApartmentCard
+                      key={a.id}
+                      apartment={a}
+                      now={now}
+                      opportunity={opportunities.get(a.id)}
+                      trend={priceTrend(trends.get(a.id)?.latest_rent ?? null, trends.get(a.id)?.previous_rent ?? null)}
+                    />
+                  ))}
+                </div>
+                <p className="text-xs text-muted-foreground">{OPPORTUNITY_DISCLAIMER}</p>
+              </>
+            )}
+          </section>
 
           <section className="space-y-4">
             <div className="flex items-end justify-between">
@@ -127,6 +183,7 @@ async function Overview() {
                   key={a.id}
                   apartment={a}
                   now={now}
+                  opportunity={opportunities.get(a.id)}
                   trend={priceTrend(trends.get(a.id)?.latest_rent ?? null, trends.get(a.id)?.previous_rent ?? null)}
                 />
               ))}
