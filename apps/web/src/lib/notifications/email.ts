@@ -53,7 +53,8 @@ export function renderAlertsEmail(items: AlertItem[], siteUrl: string): EmailMes
       }</li>`
     })
     .join('')
-  const html = layout(subject.replace('Deniels: ', ''), `<ul style="padding-left:18px;margin:0">${rows}</ul>`, siteUrl)
+  const heading = items.length === 1 ? 'Novidade nos seus apartamentos' : `${items.length} novidades nos seus apartamentos`
+  const html = layout(heading, `<ul style="padding-left:18px;margin:0">${rows}</ul>`, siteUrl)
   const text = items.map((i) => `• ${i.title}${i.body ? `\n  ${i.body}` : ''}`).join('\n') + `\n\n${siteUrl}/notificacoes`
   return { subject, html, text }
 }
